@@ -1,6 +1,6 @@
 /*==============================================================================
  Project: LockerBuddy.c                 Link: mirobo.tech/buddy3
- Date: January 31, 2023
+ Date: February 2, 2023
 
  Locker Buddy locker/closet/drawer alarm.
   
@@ -38,7 +38,7 @@
 
 #include	"BUDDY3.h"          // Include hardware constants and functions
 
-bool asleep;                    // Sleep/wake state
+bool asleep;                    // Sleep/wake state (asleep = true)
 
 unsigned char doorOpened;       // Number of times the door has opened
 unsigned char wakeCounter;      // Counter used to transition sleep/wake states
@@ -51,14 +51,14 @@ unsigned char i;                // Generic loop/index counter
 // Blinks the eyes on an off
 void blink(void)
 {
-		LED1 = 0;				// Lights off...
-		LED2 = 0;
+		RIGHTEYE = 0;           // Eyes off...
+		LEFTEYE = 0;
 		__delay_ms(150);
-		LED1 = 1;				// Lights on
-		LED2 = 1;
+		RIGHTEYE = 1;           // Eyes on
+		LEFTEYE = 1;
 }
 
-// Changes the brightness of eahc eye LED using PWM (Pulse-width Modulation).
+// Changes the brightness of each eye LED using PWM (Pulse-width Modulation).
 // The brightness changes from the start value to the end value (these must be
 // between 0 and 100).
 void setEyes(unsigned char pwmStart, unsigned char pwmEnd)
@@ -71,15 +71,15 @@ void setEyes(unsigned char pwmStart, unsigned char pwmEnd)
 		else
             pwmStart--;
 
-		LED1 = 0;               // Turn LEDs off and do one PWM cycle
-		LED2 = 0;
+		RIGHTEYE = 0;           // Turn LEDs off at the start of each PWM cycle
+		LEFTEYE = 0;
 
 		for(p = 100; p != 0; p --)
 		{
-			if(pwmStart == p)   // Turn LEDs on when pwmStart == pwm count
+			if(pwmStart == p)   // Turn LEDs on when pwmStart == p(wm) count
             {
-				LED1 = 1;
-                LED2 = 1;
+				RIGHTEYE = 1;
+                LEFTEYE = 1;
             }
 		}
 	}
@@ -92,7 +92,7 @@ bool doorOpen(void)
 {
     IRLED = 1;                  // Turn IR LED on
     __delay_us(100);            // Delay for phototransistor response
-    if(IR == 0)                 // If reflection is seen, door is closed
+    if(Q1 == 0)                 // If reflection is seen, door is closed
     {
         IRLED = 0;              // Turn LED off to save batteries
         return(false);          // Return 0
@@ -109,11 +109,11 @@ bool doorOpen(void)
 void beep(unsigned char period, unsigned char cycles)
 {
 	unsigned char i;
-    while(cycles != 0)          // Make a bunch of sound waves
+    while(cycles != 0)          // Make cycles number of sound waves
 	{
-		BEEPER = 1;				// Beeper on for high part of sound wave
+		BEEPER = 1;             // Beeper on for the high part of sound wave
 		for(i = period; i != 0; i --);
-		BEEPER = 0;				// Beeper off for low part of sound wave
+		BEEPER = 0;             // Beeper off for the low part of sound wave
 		for(i = period; i != 0; i --);
 		cycles --;
 	}
@@ -122,19 +122,19 @@ void beep(unsigned char period, unsigned char cycles)
 // Main Locker-Buddy program starts here.
 int main(void)
 {
-	init();						// Initialize oscillator, I/O, and peripherals
+	init();                     // Initialize oscillator, I/O, and peripherals
 	
-    LED1 = 1;                   // Power-on LED test
-    LED2 = 1;
-	beep(40,100);				// Power-on test beep
-	LED1 = 0;
-    LED2 = 0;
-
+    RIGHTEYE = 1;               // Power-on eye test
+    LEFTEYE = 1;
+	beep(40,100);				// Power-on beeper test
+	RIGHTEYE = 0;
+    LEFTEYE = 0;
+    
     // Set starting conditions
-	doorOpened = 0;				// Clear door opened count
+	doorOpened = 0;             // Clear door opened count
     wakeCounter = 0;            // Reset wake counter
     asleep = true;              // Start in sleep mode
-	SWDTEN = 1;					// Enable WDT (Watch Dog Timer)
+	SWDTEN = 1;                 // Enable WDT (Watch Dog Timer)
     
 	while(1)                    // This main loop repeats forever
 	{
@@ -149,20 +149,20 @@ int main(void)
             
             if(wakeCounter == awakeDelay)   // Time to wake up?
             {
-                if(doorOpened < 255) // If door openings < character limit
-                    doorOpened ++;   // Count door openings and wake up!
+                if(doorOpened < 255) // If door openings < character var. limit
+                    doorOpened ++;   // count door openings and wake up!
 
                 setEyes(1,100);     // Wake up, brighten eyes using PWM
 
-                LED1 = 1;           // Keep eyes on now
-                LED2 = 1;
+                RIGHTEYE = 1;       // Keep eyes on now
+                LEFTEYE = 1;
                 SLEEP();            // Wait until next WDT cycle
                 
-                LED1 = 0;           // Blink and
-                LED2 = 0;
+                RIGHTEYE = 0;       // Blink and...
+                LEFTEYE = 0;
                 beep(80,80);        // Say 'hello'
-                LED1 = 1;
-                LED2 = 1;
+                RIGHTEYE = 1;
+                LEFTEYE = 1;
                 beep(60,60);
                 beep(72,80); 
                 asleep = false;     // Switch to awake mode
@@ -174,23 +174,23 @@ int main(void)
             if(doorOpened > 1)      // Check if the door has been open before
             {
                 SLEEP();            // Nap until next WDT cycle
-                for(i = 3; i != 0; i --)    // Uh, oh. 
+                for(i = 3; i != 0; i --)    // Uh oh, this is not the first one!
                 {
-                    LED1 = 0;				
-                    beep(80,60);	// Wink and make alert sounds
-                    LED1 = 1;
-                    LED2 = 0;
+                    RIGHTEYE = 0;				
+                    beep(80,60);    // Wink and make alert sounds
+                    RIGHTEYE = 1;
+                    LEFTEYE = 0;
                     beep(120,50);
-                    LED2 = 1;
+                    LEFTEYE = 1;
                 }
                 for(i = doorOpened-1; i != 0; i--)   // Announce # of door events
                 {                                                   
                     SLEEP();
-                    LED1 = 0;
-                    LED2 = 0;
+                    RIGHTEYE = 0;
+                    LEFTEYE = 0;
                     beep(160,80);   // Blink and boop for every door event
-                    LED1 = 1;
-                    LED2 = 1;
+                    RIGHTEYE = 1;
+                    LEFTEYE = 1;
                 }
             }
             wakeCounter = 0;        // Reset wake counter
@@ -200,16 +200,16 @@ int main(void)
                 SLEEP();            // Nap until next WDT wake-up
                 blink();
                 
-                if(S1 == 0)			// Is pushbutton pressed?
+                if(S1 == 0)         // Is pushbutton pressed?
                 {
-                    doorOpened = 0;	// If yes, reset doorCount
-                    LED1 = 0;		// Blink
-                    LED2 = 0;
-                    beep(60,60);	// Say 'ok'
-                    LED1 = 1;
-                    LED2 = 1;
+                    doorOpened = 0; // If yes, reset doorCount
+                    RIGHTEYE = 0;   // Blink
+                    LEFTEYE = 0;
+                    beep(60,60);    // Say 'ok'
+                    RIGHTEYE = 1;
+                    LEFTEYE = 1;
                     beep(72,80);
-                    blink();		// Blink, blink
+                    blink();        // Blink, blink
                 }
                 
                 if(doorOpen())      // Door still open?
@@ -220,8 +220,8 @@ int main(void)
             
             SLEEP();                // Do one more WDT sleep cycle
             setEyes(100,0);         // Getting sleepy... dim the eyes
-            LED1 = 0;               // Keep eyes off
-            LED2 = 0;
+            RIGHTEYE = 0;           // Keep eyes off
+            LEFTEYE = 0;
             wakeCounter = 0;        // Reset wake counter
             asleep = true;          // Sleep
 		}
